@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 const statusConfig: Record<string, { bg: string; text: string; dot: string; pulse: boolean }> = {
   done:       { bg: "rgba(52,211,153,0.12)",  text: "#34d399", dot: "#34d399", pulse: false },
@@ -18,22 +18,17 @@ export default function Home() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetch("/api/clinics").then(r => r.json()).then(d => setClinics(d.clinics || [])); fetch("/api/jobs")
-      .then(r => r.json())
-      .then(data => {
-        const j = data.jobs || [];
-        setJobs(j);
-        const clinicMap = new Map();
-        j.forEach((job: any) => {
-          if (job.clinics && !clinicMap.has(job.clinics.id)) {
-            clinicMap.set(job.clinics.id, job.clinics);
-          }
-        });
-        setClinics(Array.from(clinicMap.values()));
-        setLoading(false);
-      });
+  const fetchData = useCallback(async () => {
+    const [jobsRes, clinicsRes] = await Promise.all([
+      fetch("/api/jobs").then(r => r.json()),
+      fetch("/api/clinics").then(r => r.json()),
+    ]);
+    setJobs(jobsRes.jobs || []);
+    setClinics(clinicsRes.clinics || []);
+    setLoading(false);
   }, []);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   const displayJobs = jobs.filter(j => {
     const matchClinic = selectedClinic ? j.clinic_id === selectedClinic : true;
@@ -93,7 +88,8 @@ export default function Home() {
 
         {clinics.length === 0 && !loading && (
           <div style={{ padding: "12px 10px", fontSize: 11, color: "#333", textAlign: "center" }}>
-            医院未登録<br />メールを転送すると自動追加されます
+            医院未登録<br />
+            <a href="/clinics" style={{ color: "#2563eb", textDecoration: "none" }}>医院を登録する →</a>
           </div>
         )}
       </div>
@@ -108,8 +104,10 @@ export default function Home() {
               </h1>
               <div style={{ fontSize: 11, color: "#383845", marginTop: 2 }}>{jobsForStats.length} 件のジョブ</div>
             </div>
-            <a href="/clinics" style={{ background: "#1a1a24", border: "1px solid #1e1e28", borderRadius: 8, padding: "8px 14px", fontSize: 13, color: "#888", textDecoration: "none", whiteSpace: "nowrap" }}>医院管理 →</a>
-            <input placeholder="医院名・件名で検索…" value={search} onChange={e => setSearch(e.target.value)} style={{ width: 210 }} />
+            <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+              <a href="/clinics" style={{ background: "#1a1a24", border: "1px solid #1e1e28", borderRadius: 8, padding: "8px 14px", fontSize: 13, color: "#888", textDecoration: "none", whiteSpace: "nowrap" }}>医院管理 →</a>
+              <input placeholder="医院名・件名で検索…" value={search} onChange={e => setSearch(e.target.value)} style={{ width: 210 }} />
+            </div>
           </div>
 
           <div style={{ display: "flex", gap: 24 }}>
@@ -146,11 +144,12 @@ export default function Home() {
               </thead>
               <tbody>
                 {displayJobs.map(job => {
+                  const clinic = clinics.find(c => c.id === job.clinic_id);
                   const s = statusConfig[job.status] || statusConfig.pending;
                   return (
                     <tr key={job.id} className="row" style={{ borderBottom: "1px solid #0f0f13" }}>
                       <td style={{ padding: "13px 12px" }}>
-                        <div style={{ fontSize: 12, fontWeight: 500, color: "#bbb" }}>{job.clinics?.name || "未登録"}</div>
+                        <div style={{ fontSize: 12, fontWeight: 500, color: "#bbb" }}>{clinic?.name || "未登録"}</div>
                         <div style={{ fontSize: 10, color: "#2e2e38", fontFamily: "DM Mono, monospace" }}>{job.email_from}</div>
                       </td>
                       <td style={{ padding: "13px 12px", fontSize: 12, color: "#888", maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{job.email_subject || "—"}</td>
