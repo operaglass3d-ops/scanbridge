@@ -19,7 +19,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/jobs")
+    fetch("/api/clinics").then(r => r.json()).then(d => setClinics(d.clinics || [])); fetch("/api/jobs")
       .then(r => r.json())
       .then(data => {
         const j = data.jobs || [];
