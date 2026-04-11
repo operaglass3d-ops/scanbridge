@@ -108,8 +108,8 @@ export default function Home() {
         )}
 
         <div style={{ marginTop: "auto", padding: "12px 10px", borderTop: "1px solid #141418" }}>
-          <div style={{ fontSize: 11, color: "#444", marginBottom: 8, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{userEmail}</div>
-          <button onClick={handleLogout} style={{ background: "transparent", border: "1px solid #1e1e28", borderRadius: 8, padding: "6px 12px", color: "#555", fontSize: 11, cursor: "pointer", width: "100%" }}>
+          <div style={{ fontSize: 11, color: "#888", marginBottom: 8, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{userEmail}</div>
+          <button onClick={handleLogout} style={{ background: "transparent", border: "1px solid #1e1e28", borderRadius: 8, padding: "6px 12px", color: "#aaa", fontSize: 11, cursor: "pointer", width: "100%" }}>
             ログアウト
           </button>
         </div>
