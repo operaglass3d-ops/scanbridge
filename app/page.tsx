@@ -108,6 +108,7 @@ export default function Home() {
               </h1>
               <div style={{ fontSize: 11, color: "#383845", marginTop: 2 }}>{jobsForStats.length} 件のジョブ</div>
             </div>
+            <a href="/clinics" style={{ background: "#1a1a24", border: "1px solid #1e1e28", borderRadius: 8, padding: "8px 14px", fontSize: 13, color: "#888", textDecoration: "none", whiteSpace: "nowrap" }}>医院管理 →</a>
             <input placeholder="医院名・件名で検索…" value={search} onChange={e => setSearch(e.target.value)} style={{ width: 210 }} />
           </div>
 
