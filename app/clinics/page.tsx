@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import { createClient } from "../../lib/supabase";
 
 const COLORS = ["#f472b6","#60a5fa","#a78bfa","#34d399","#fb923c","#facc15"];
 
@@ -13,8 +14,16 @@ export default function Clinics() {
 
   useEffect(() => { fetchClinics(); }, []);
 
+  async function getHeaders(): Promise<Record<string, string>> {
+    const supabase = createClient();
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return {};
+    return { Authorization: `Bearer ${session.access_token}` };
+  }
+
   async function fetchClinics() {
-    const r = await fetch("/api/clinics");
+    const headers = await getHeaders();
+    const r = await fetch("/api/clinics", { headers });
     const d = await r.json();
     setClinics(d.clinics || []);
   }
@@ -22,9 +31,10 @@ export default function Clinics() {
   async function addClinic() {
     if (!name || !email) { setMsg("医院名とメールアドレスを入力してください"); return; }
     setLoading(true);
+    const headers = await getHeaders();
     const r = await fetch("/api/clinics", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { ...headers, "Content-Type": "application/json" },
       body: JSON.stringify({ name, email, color })
     });
     const d = await r.json();
@@ -35,7 +45,8 @@ export default function Clinics() {
 
   async function deleteClinic(id: string) {
     if (!confirm("削除しますか？")) return;
-    await fetch(`/api/clinics?id=${id}`, { method: "DELETE" });
+    const headers = await getHeaders();
+    await fetch(`/api/clinics?id=${id}`, { method: "DELETE", headers });
     fetchClinics();
   }
 
