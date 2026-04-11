@@ -75,7 +75,7 @@ export default function Home() {
       {/* Sidebar */}
       <div style={{ width: 256, background: "#0d0d11", borderRight: "1px solid #141418", display: "flex", flexDirection: "column", padding: "20px 10px", gap: 2, flexShrink: 0, overflowY: "auto" }}>
         <div style={{ padding: "6px 10px 20px" }}>
-          <div style={{ fontSize: 15, fontWeight: 600, color: "#fff" }}>ScanBridge</div>
+          <div style={{ fontSize: 15, fontWeight: 600, color: "#fff" }}>WEスキャンブリッジ</div>
           <div style={{ fontSize: 11, color: "#383845", marginTop: 2 }}>口腔内スキャン管理</div>
         </div>
 
