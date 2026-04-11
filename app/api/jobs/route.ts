@@ -1,19 +1,39 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
+
+async function getUserFromToken(token: string) {
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+  const { data: { user } } = await supabase.auth.getUser(token)
+  return user
+}
 
 export async function GET(req: NextRequest) {
-  const authHeader = req.headers.get('authorization')
-  const token = authHeader?.replace('Bearer ', '')
-
+  const token = req.headers.get('authorization')?.replace('Bearer ', '')
   if (!token) return NextResponse.json({ jobs: [] })
 
-  const { data: { user } } = await supabase.auth.getUser(token)
+  const user = await getUserFromToken(token)
   if (!user) return NextResponse.json({ jobs: [] })
+
+  const supabase = getSupabase()
+
+  const { data: clinics } = await supabase
+    .from('clinics')
+    .select('id')
+    .eq('user_id', user.id)
+
+  if (!clinics || clinics.length === 0) return NextResponse.json({ jobs: [] })
+
+  const clinicIds = clinics.map(c => c.id)
 
   const { searchParams } = new URL(req.url)
   const clinicId = searchParams.get('clinic_id')
@@ -21,9 +41,7 @@ export async function GET(req: NextRequest) {
   let query = supabase
     .from('jobs')
     .select('*, clinics(id, name, email, color)')
-    .in('clinic_id', 
-      supabase.from('clinics').select('id').eq('user_id', user.id)
-    )
+    .in('clinic_id', clinicIds)
     .order('received_at', { ascending: false })
 
   if (clinicId) {

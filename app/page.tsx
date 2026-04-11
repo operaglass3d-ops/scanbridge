@@ -29,7 +29,7 @@ export default function Home() {
     
     setUserEmail(session.user.email || "");
     const token = session.access_token;
-    const headers = { Authorization: `Bearer ${token}` };
+    const headers = { Authorization: `Bearer ${token}` }; console.log("token:", token?.substring(0,20));
 
     const [jobsRes, clinicsRes] = await Promise.all([
       fetch("/api/jobs", { headers }).then(r => r.json()),

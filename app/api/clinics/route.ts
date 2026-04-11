@@ -1,20 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
+
+async function getUserFromToken(token: string) {
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+  const { data: { user } } = await supabase.auth.getUser(token)
+  return user
+}
 
 export async function GET(req: NextRequest) {
-  const authHeader = req.headers.get('authorization')
-  const token = authHeader?.replace('Bearer ', '')
-  
+  const token = req.headers.get('authorization')?.replace('Bearer ', '')
   if (!token) return NextResponse.json({ clinics: [] })
   
-  const { data: { user } } = await supabase.auth.getUser(token)
+  const user = await getUserFromToken(token)
   if (!user) return NextResponse.json({ clinics: [] })
 
+  const supabase = getSupabase()
   const { data, error } = await supabase
     .from('clinics')
     .select('*')
@@ -25,13 +35,13 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const authHeader = req.headers.get('authorization')
-  const token = authHeader?.replace('Bearer ', '')
+  const token = req.headers.get('authorization')?.replace('Bearer ', '')
   if (!token) return NextResponse.json({ error: '未認証' }, { status: 401 })
 
-  const { data: { user } } = await supabase.auth.getUser(token)
+  const user = await getUserFromToken(token)
   if (!user) return NextResponse.json({ error: '未認証' }, { status: 401 })
 
+  const supabase = getSupabase()
   const { name, email, color } = await req.json()
   const { data, error } = await supabase
     .from('clinics')
@@ -43,13 +53,13 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const authHeader = req.headers.get('authorization')
-  const token = authHeader?.replace('Bearer ', '')
+  const token = req.headers.get('authorization')?.replace('Bearer ', '')
   if (!token) return NextResponse.json({ error: '未認証' }, { status: 401 })
 
-  const { data: { user } } = await supabase.auth.getUser(token)
+  const user = await getUserFromToken(token)
   if (!user) return NextResponse.json({ error: '未認証' }, { status: 401 })
 
+  const supabase = getSupabase()
   const { searchParams } = new URL(req.url)
   const id = searchParams.get('id')
   const { error } = await supabase.from('clinics').delete().eq('id', id).eq('user_id', user.id)
