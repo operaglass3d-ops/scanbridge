@@ -46,40 +46,56 @@ export default function Clinics() {
       <div style={{ maxWidth: 640, margin: "0 auto" }}>
         <div style={{ marginBottom: 32 }}>
           <a href="/" style={{ fontSize: 12, color: "#555", textDecoration: "none" }}>← ダッシュボードに戻る</a>
-          <h1 style={{ fontSize:
-mkdir -p ~/scanbridge/app/api/clinics && cat > ~/scanbridge/app/api/clinics/route.ts << 'ENDOFFILE'
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+          <h1 style={{ fontSize: 20, fontWeight: 600, color: "#fff", marginTop: 12 }}>医院管理</h1>
+          <p style={{ fontSize: 13, color: "#555", marginTop: 4 }}>医院を登録すると、メールアドレスで自動識別されます</p>
+        </div>
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+        <div style={{ background: "#111115", border: "1px solid #1a1a22", borderRadius: 14, padding: "24px", marginBottom: 24 }}>
+          <h2 style={{ fontSize: 14, fontWeight: 600, color: "#ccc", marginBottom: 16 }}>新しい医院を登録</h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div>
+              <div style={{ fontSize: 11, color: "#555", marginBottom: 6 }}>医院名</div>
+              <input placeholder="例：さくら歯科クリニック" value={name} onChange={e => setName(e.target.value)} />
+            </div>
+            <div>
+              <div style={{ fontSize: 11, color: "#555", marginBottom: 6 }}>送信元メールアドレス</div>
+              <input placeholder="例：sakura@clinic.jp" value={email} onChange={e => setEmail(e.target.value)} type="email" />
+            </div>
+            <div>
+              <div style={{ fontSize: 11, color: "#555", marginBottom: 8 }}>カラー</div>
+              <div style={{ display: "flex", gap: 8 }}>
+                {COLORS.map(c => (
+                  <div key={c} onClick={() => setColor(c)} style={{ width: 28, height: 28, borderRadius: "50%", background: c, cursor: "pointer", border: color === c ? "3px solid #fff" : "3px solid transparent", transition: "border 0.15s" }} />
+                ))}
+              </div>
+            </div>
+            {msg && <div style={{ fontSize: 12, color: msg.includes("エラー") ? "#f87171" : "#34d399" }}>{msg}</div>}
+            <button onClick={addClinic} disabled={loading} style={{ background: "#2563eb", color: "#fff", border: "none", borderRadius: 8, padding: "10px", fontSize: 13, fontWeight: 500, cursor: "pointer", marginTop: 4 }}>
+              {loading ? "登録中..." : "登録する"}
+            </button>
+          </div>
+        </div>
 
-export async function GET() {
-  const { data, error } = await supabase
-    .from('clinics')
-    .select('*')
-    .order('created_at', { ascending: false })
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json({ clinics: data })
-}
-
-export async function POST(req: NextRequest) {
-  const { name, email, color } = await req.json()
-  const { data, error } = await supabase
-    .from('clinics')
-    .insert({ name, email, color })
-    .select()
-    .single()
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json({ clinic: data })
-}
-
-export async function DELETE(req: NextRequest) {
-  const { searchParams } = new URL(req.url)
-  const id = searchParams.get('id')
-  const { error } = await supabase.from('clinics').delete().eq('id', id)
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json({ success: true })
+        <div style={{ background: "#111115", border: "1px solid #1a1a22", borderRadius: 14, overflow: "hidden" }}>
+          <div style={{ padding: "16px 20px", borderBottom: "1px solid #1a1a22" }}>
+            <div style={{ fontSize: 14, fontWeight: 500, color: "#ccc" }}>登録済み医院 ({clinics.length})</div>
+          </div>
+          {clinics.length === 0 ? (
+            <div style={{ padding: "40px", textAlign: "center", color: "#333", fontSize: 13 }}>まだ登録されていません</div>
+          ) : clinics.map(c => (
+            <div key={c.id} style={{ padding: "14px 20px", borderBottom: "1px solid #0f0f13", display: "flex", alignItems: "center", gap: 12 }}>
+              <div style={{ width: 32, height: 32, borderRadius: 8, background: `${c.color}20`, border: `1px solid ${c.color}30`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 600, color: c.color, flexShrink: 0 }}>
+                {c.name?.charAt(0)}
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 13, fontWeight: 500, color: "#ddd" }}>{c.name}</div>
+                <div style={{ fontSize: 11, color: "#444", fontFamily: "monospace", marginTop: 2 }}>{c.email}</div>
+              </div>
+              <button onClick={() => deleteClinic(c.id)} style={{ background: "transparent", border: "1px solid #2a2a35", borderRadius: 6, padding: "4px 10px", color: "#555", fontSize: 11, cursor: "pointer" }}>削除</button>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 }
