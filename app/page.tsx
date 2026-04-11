@@ -1,5 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
+import { createClient } from "../lib/supabase";
+import { useRouter } from "next/navigation";
 
 const statusConfig: Record<string, { bg: string; text: string; dot: string; pulse: boolean }> = {
   done:       { bg: "rgba(52,211,153,0.12)",  text: "#34d399", dot: "#34d399", pulse: false },
@@ -17,23 +19,38 @@ export default function Home() {
   const [selectedClinic, setSelectedClinic] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [userEmail, setUserEmail] = useState("");
+  const router = useRouter();
+  const supabase = createClient();
 
   const fetchData = useCallback(async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) { router.push("/login"); return; }
+    
+    setUserEmail(session.user.email || "");
+    const token = session.access_token;
+    const headers = { Authorization: `Bearer ${token}` };
+
     const [jobsRes, clinicsRes] = await Promise.all([
-      fetch("/api/jobs").then(r => r.json()),
-      fetch("/api/clinics").then(r => r.json()),
+      fetch("/api/jobs", { headers }).then(r => r.json()),
+      fetch("/api/clinics", { headers }).then(r => r.json()),
     ]);
     setJobs(jobsRes.jobs || []);
     setClinics(clinicsRes.clinics || []);
     setLoading(false);
-  }, []);
+  }, [supabase, router]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  async function handleLogout() {
+    await supabase.auth.signOut();
+    router.push("/login");
+  }
 
   const displayJobs = jobs.filter(j => {
     const matchClinic = selectedClinic ? j.clinic_id === selectedClinic : true;
     const matchSearch = search
-      ? (j.email_from?.includes(search) || j.email_subject?.includes(search) || j.clinics?.name?.includes(search))
+      ? (j.email_from?.includes(search) || j.email_subject?.includes(search))
       : true;
     return matchClinic && matchSearch;
   });
@@ -46,8 +63,6 @@ export default function Home() {
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&family=Noto+Sans+JP:wght@300;400;500&display=swap');
         *{box-sizing:border-box;margin:0;padding:0;}
         @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
-        @keyframes fadeUp{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
-        .fade{animation:fadeUp 0.3s ease forwards;}
         .pulse{animation:pulse 1.6s ease-in-out infinite;}
         .clinic-card{transition:all 0.15s;cursor:pointer;border-radius:12px;border:1px solid transparent;}
         .clinic-card:hover{background:rgba(255,255,255,0.04)!important;}
@@ -88,10 +103,16 @@ export default function Home() {
 
         {clinics.length === 0 && !loading && (
           <div style={{ padding: "12px 10px", fontSize: 11, color: "#333", textAlign: "center" }}>
-            医院未登録<br />
             <a href="/clinics" style={{ color: "#2563eb", textDecoration: "none" }}>医院を登録する →</a>
           </div>
         )}
+
+        <div style={{ marginTop: "auto", padding: "12px 10px", borderTop: "1px solid #141418" }}>
+          <div style={{ fontSize: 11, color: "#444", marginBottom: 8, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{userEmail}</div>
+          <button onClick={handleLogout} style={{ background: "transparent", border: "1px solid #1e1e28", borderRadius: 8, padding: "6px 12px", color: "#555", fontSize: 11, cursor: "pointer", width: "100%" }}>
+            ログアウト
+          </button>
+        </div>
       </div>
 
       {/* Main */}
@@ -106,7 +127,7 @@ export default function Home() {
             </div>
             <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
               <a href="/clinics" style={{ background: "#1a1a24", border: "1px solid #1e1e28", borderRadius: 8, padding: "8px 14px", fontSize: 13, color: "#888", textDecoration: "none", whiteSpace: "nowrap" }}>医院管理 →</a>
-              <input placeholder="医院名・件名で検索…" value={search} onChange={e => setSearch(e.target.value)} style={{ width: 210 }} />
+              <input placeholder="件名で検索…" value={search} onChange={e => setSearch(e.target.value)} style={{ width: 200 }} />
             </div>
           </div>
 
@@ -126,7 +147,7 @@ export default function Home() {
           </div>
         </div>
 
-        <div style={{ flex: 1, overflow: "auto", padding: "12px 28px 24px" }} className="fade">
+        <div style={{ flex: 1, overflow: "auto", padding: "12px 28px 24px" }}>
           {loading ? (
             <div style={{ textAlign: "center", padding: "60px", color: "#333", fontSize: 13 }}>読み込み中...</div>
           ) : displayJobs.length === 0 ? (
@@ -154,7 +175,7 @@ export default function Home() {
                       </td>
                       <td style={{ padding: "13px 12px", fontSize: 12, color: "#888", maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{job.email_subject || "—"}</td>
                       <td style={{ padding: "13px 12px", fontSize: 11, color: "#444", fontFamily: "DM Mono, monospace" }}>{job.received_at ? new Date(job.received_at).toLocaleString("ja-JP") : "—"}</td>
-                      <td style={{ padding: "13px 12px", fontSize: 11, color: "#444", fontFamily: "DM Mono, monospace", maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      <td style={{ padding: "13px 12px", fontSize: 11, color: "#444", maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {job.download_url ? <a href={job.download_url} target="_blank" rel="noopener noreferrer" style={{ color: "#60a5fa" }}>リンクを開く ↗</a> : "—"}
                       </td>
                       <td style={{ padding: "13px 12px" }}>
