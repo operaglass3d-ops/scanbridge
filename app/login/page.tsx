@@ -33,7 +33,7 @@ export default function Login() {
 
       <div style={{ width: 360 }}>
         <div style={{ textAlign: "center", marginBottom: 32 }}>
-          <div style={{ fontSize: 24, fontWeight: 700, color: "#fff", letterSpacing: "-0.5px" }}>ScanBridge</div>
+          <div style={{ fontSize: 24, fontWeight: 700, color: "#fff", letterSpacing: "-0.5px" }}>WE ScanBridge</div>
           <div style={{ fontSize: 12, color: "#444", marginTop: 4 }}>口腔内スキャン管理システム</div>
         </div>
 
